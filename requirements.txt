@@ -1,0 +1,8 @@
+git+https://github.com/openai/CLIP.git
+ftfy 
+regex
+contextlib2
+flask
+gevent
+gunicorn
+requests
