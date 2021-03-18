@@ -63,3 +63,8 @@ The response looks like this:
     }
 ]
 ```
+
+### SageMaker Integration
+
+This container is compatible with SageMaker so you should be able to host it as a SageMaker endpoint with no modification. 
+The code supports for GPU and CPU instances.
