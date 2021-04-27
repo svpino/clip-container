@@ -16,8 +16,6 @@ RUN pip install --user cython
 RUN pip3 install --user torch==1.7.1+cu101 torchvision==0.8.2+cu101 -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip3 install --user -r requirements.txt
 
-RUN wget https://openaipublic.azureedge.net/clip/bpe_simple_vocab_16e6.txt.gz -O /opt/ml/bpe_simple_vocab_16e6.txt.gz
-
 COPY /code .
 
 FROM python:3.8.0-slim
