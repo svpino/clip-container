@@ -40,27 +40,40 @@ The response looks like this:
 
 ```shell
 [
-    {
-        "url": "https://images.unsplash.com/photo-1597308680537-1ba44407ffc0?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1834&q=80", 
-        "labels": [
-            "woman with black shirt and a bag", 
-            "woman with a bag", 
-            "person with a bag", 
-            "bag", "person"
-        ], 
-        "probs": [1.0, 1.7488513970320696e-09, 1.1663764917350243e-19, 4.179975909038141e-30, 3.77612043676229e-30]
-    }, 
-    {
-        "url": "https://images.unsplash.com/photo-1589270216117-7972b3082c7d?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1834&q=80", 
-        "labels": [
-            "person with a bag", 
-            "woman with black shirt and a bag", 
-            "bag", 
-            "woman with a bag", 
-            "person"
-        ], 
-        "probs": [1.0, 2.4879632576357835e-08, 2.065714813830402e-13, 7.658033346455602e-15, 1.1307645811408335e-23]
-    }
+    [
+        [
+            5,
+            4,
+            2
+        ],
+        [
+            "woman with black shirt and a bag",
+            "woman with a bag",
+            "person with a bag"
+        ],
+        [
+            0.8420771360397339,
+            0.13471755385398865,
+            0.020683499053120613
+        ]
+    ],
+    [
+        [
+            2,
+            5,
+            4
+        ],
+        [
+            "person with a bag",
+            "woman with black shirt and a bag",
+            "woman with a bag"
+        ],
+        [
+            0.8793349266052246,
+            0.06026121601462364,
+            0.027413660660386086
+        ]
+    ]
 ]
 ```
 
