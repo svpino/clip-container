@@ -1,5 +1,6 @@
 git+https://github.com/openai/CLIP.git
 contextlib2
+opencv-python
 flask
 gevent
 gunicorn

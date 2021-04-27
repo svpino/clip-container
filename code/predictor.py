@@ -1,4 +1,7 @@
+import base64
 import clip
+import cv2
+import io
 import json
 import logging
 import logging.config
@@ -31,7 +34,7 @@ PREFIX_PATH = "/opt/ml/"
 IMAGES_FOLDER = os.path.join(PREFIX_PATH, "images")
 
 
-def download_images(request_id, image_urls):
+def download_image(request_id, image):
     def download_file_from_url(folder, url):
         filename = os.path.join(folder, os.path.basename(urlparse(url).path))
         try:
@@ -43,26 +46,22 @@ def download_images(request_id, image_urls):
         except Exception:
             return None
 
-    logging.info(f"Downloading {len(image_urls)} images...")
+    logging.info(f'Downloading image "{image}"...')
 
     folder = os.path.join(IMAGES_FOLDER, request_id)
     os.makedirs(folder, exist_ok=True)
     os.makedirs(IMAGES_FOLDER, exist_ok=True)
 
-    files = []
-    for url in image_urls:
-        fragments = urlparse(url, allow_fragments=False)
-        if fragments.scheme in ("http", "https"):
-            filename = download_file_from_url(folder, url)
-        else:
-            filename = url
+    fragments = urlparse(image, allow_fragments=False)
+    if fragments.scheme in ("http", "https"):
+        filename = download_file_from_url(folder, image)
+    else:
+        filename = image
 
-        if filename is None:
-            raise Exception(f"There was an error downloading image {url}")
+    if filename is None:
+        raise Exception(f"There was an error downloading image {image}")
 
-        files.append(filename)
-
-    return files
+    return Image.open(filename).convert("RGB")
 
 
 def delete_images(request_id):
@@ -117,13 +116,7 @@ class Predictor(object):
         return Predictor.clip_model
 
     @staticmethod
-    def predict(files, classes):
-        images = []
-
-        for f in files:
-            image = Predictor.preprocess(Image.open(f).convert("RGB"))
-            images.append(image)
-
+    def predict(images, classes):
         image_input = torch.tensor(np.stack(images)).to(Predictor.device)
         image_input -= Predictor.image_mean[:, None, None]
         image_input /= Predictor.image_std[:, None, None]
@@ -191,13 +184,23 @@ def invoke():
             mimetype="application/json",
         )
 
-    data = request.get_json()
+    Predictor.load()
 
     request_id = uuid.uuid4().hex
-    files = download_images(request_id=request_id, image_urls=data["images"])
 
-    Predictor.load()
-    result = Predictor.predict(files=files, classes=data["classes"])
+    data = request.get_json()
+
+    images = []
+    for im in data["images"]:
+        fragments = urlparse(im, allow_fragments=False)
+        if fragments.scheme in ("http", "https", "file"):
+            image = download_image(request_id, im)
+        else:
+            image = Image.open(io.BytesIO(base64.b64decode(im)))
+
+        images.append(Predictor.preprocess(image))
+
+    result = Predictor.predict(images=images, classes=data["classes"])
 
     delete_images(request_id=request_id)
 
