@@ -34,6 +34,7 @@ WORKDIR /opt/ml/code
 
 COPY --from=build /root/.local /root/.local
 COPY --from=build /build/ .
+COPY --from=build /opt/ml /opt/ml
 COPY --from=build /.cache/clip /root/.cache/clip
 
 # SageMaker will automatically run the serve script so we need to make
