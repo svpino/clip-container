@@ -78,12 +78,7 @@ def delete_images(request_id):
 def predictor_output_mapping(predictor_result, classes: list):
     output = []
 
-    for result in inference:
-        if isinstance(result, dict) and result.get("is_error", False):
-            output.append(result)
-
-            continue
-
+    for result in predictor_result:
         selected_classes = []
         result_classes = result[0]
         result_confidences = result[2]
