@@ -33,6 +33,8 @@ logging.basicConfig(level=logging.DEBUG)
 PREFIX_PATH = "/opt/ml/"
 IMAGES_FOLDER = os.path.join(PREFIX_PATH, "images")
 
+CONFIDENCE_THRESHOLD = 0.02
+
 
 def download_image(request_id, image):
     def download_file_from_url(folder, url):
@@ -71,6 +73,47 @@ def delete_images(request_id):
         shutil.rmtree(directory)
     except OSError as e:
         logging.error(f"Error deleting image directory {directory}.")
+
+
+def predictor_output_mapping(predictor_result, classes: list):
+    output = []
+
+    for result in inference:
+        if isinstance(result, dict) and result.get("is_error", False):
+            output.append(result)
+
+            continue
+
+        selected_classes = []
+        result_classes = result[0]
+        result_confidences = result[2]
+
+        first_confidence = result_confidences[0]
+        for index in range(len(result_confidences)):
+            result_confidence = result_confidences[index]
+
+            if abs(first_confidence - result_confidence) <= CONFIDENCE_THRESHOLD:
+                result_class = result_classes[index]
+                selected_classes.append(result_class)
+
+        classification = False
+
+        for selected_class in selected_classes:
+            class_config = classes[selected_class]
+            if class_config[1]:
+                classification = True
+
+                break
+
+        output.append(
+            {
+                "classification": 1 if classification else 0,
+                "confidence": result_confidences[0],
+                "predictor": result,
+            }
+        )
+
+    return output
 
 
 class Predictor(object):
@@ -200,10 +243,12 @@ def invoke():
 
         images.append(Predictor.preprocess(image))
 
-    result = Predictor.predict(images=images, classes=data["classes"])
+    classes = [class_list[0] for class_list in data["classes"]]
+    predictor_result = Predictor.predict(images=images, classes=classes)
 
     delete_images(request_id=request_id)
 
+    result = predictor_output_mapping(predictor_result, data["classes"])
     return Response(
         response=json.dumps(result),
         status=200,
