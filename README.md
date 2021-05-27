@@ -43,7 +43,7 @@ The response looks like this:
     {
         "classification": 1,
         "confidence": 0.8420763611793518,
-        "predictor": [
+        "prompts": [
             [
                 5,
                 4,
@@ -64,7 +64,7 @@ The response looks like this:
     {
         "classification": 1,
         "confidence": 0.8793354034423828,
-        "predictor": [
+        "prompts": [
             [
                 2,
                 5,

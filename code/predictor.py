@@ -104,7 +104,7 @@ def predictor_output_mapping(predictor_result, classes: list):
             {
                 "classification": 1 if classification else 0,
                 "confidence": result_confidences[0],
-                "predictor": result,
+                "prompts": result,
             }
         )
 
