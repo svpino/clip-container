@@ -35,6 +35,8 @@ IMAGES_FOLDER = os.path.join(PREFIX_PATH, "images")
 
 CONFIDENCE_THRESHOLD = 0.02
 
+ALIRA_ENDPOINT = os.environ.get("ALIRA_ENDPOINT", None)
+
 
 def download_image(request_id, image):
     def download_file_from_url(folder, url):
@@ -244,6 +246,15 @@ def invoke():
     delete_images(request_id=request_id)
 
     result = predictor_output_mapping(predictor_result, data["classes"])
+    if ALIRA_ENDPOINT is not None:
+        requests.post(ALIRA_ENDPOINT, json={
+            "data": {
+                "images": data["images"],
+                "classes": data["classes"]
+            },
+            "inference": result
+        })
+
     return Response(
         response=json.dumps(result),
         status=200,
