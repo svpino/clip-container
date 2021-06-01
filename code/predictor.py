@@ -245,15 +245,22 @@ def invoke():
 
     delete_images(request_id=request_id)
 
-    result = predictor_output_mapping(predictor_result, data["classes"])
+    result = predictor_output_mapping(predictor_result, data["classes"])    
+
     if ALIRA_ENDPOINT is not None:
-        requests.post(ALIRA_ENDPOINT, json={
-            "data": {
-                "images": data["images"],
-                "classes": data["classes"]
-            },
-            "inference": result
-        })
+        alira_request = []
+        for index in range(len(data["images"])):
+            image = data["images"][index]
+            inference = result[index]
+            alira_request.append({
+                "data": {
+                    "image": im,
+                    "classes": data["classes"]
+                },
+                "inference": inference
+            })
+
+        requests.post(ALIRA_ENDPOINT, json=alira_request)
 
     return Response(
         response=json.dumps(result),
