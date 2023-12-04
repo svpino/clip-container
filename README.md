@@ -32,7 +32,7 @@ curl --location --request POST 'http://localhost:8080/invocations' \
     "images": [
         "https://images.unsplash.com/photo-1597308680537-1ba44407ffc0?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1834&q=80",
         "https://images.unsplash.com/photo-1589270216117-7972b3082c7d?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1834&q=80"],
-    "classes": ["person", "bag", "person with a bag", "woman riding a horse", "woman with a bag", "woman with black shirt and a bag"]
+    "classes": [["person", 1], ["bag", 0], ["person with a bag", 1], ["woman riding a horse", 1], ["woman with a bag", 1], ["woman with black shirt and a bag", 1]]
 }'
 ```
 
@@ -40,40 +40,48 @@ The response looks like this:
 
 ```shell
 [
-    [
-        [
-            5,
-            4,
-            2
-        ],
-        [
-            "woman with black shirt and a bag",
-            "woman with a bag",
-            "person with a bag"
-        ],
-        [
-            0.8420771360397339,
-            0.13471755385398865,
-            0.020683499053120613
+    {
+        "classification": 1,
+        "confidence": 0.8420763611793518,
+        "prompts": [
+            [
+                5,
+                4,
+                2
+            ],
+            [
+                "woman with black shirt and a bag",
+                "woman with a bag",
+                "person with a bag"
+            ],
+            [
+                0.8420763611793518,
+                0.13471820950508118,
+                0.020683519542217255
+            ]
         ]
-    ],
-    [
-        [
-            2,
-            5,
-            4
-        ],
-        [
-            "person with a bag",
-            "woman with black shirt and a bag",
-            "woman with a bag"
-        ],
-        [
-            0.8793349266052246,
-            0.06026121601462364,
-            0.027413660660386086
+    },
+    {
+        "classification": 1,
+        "confidence": 0.8793354034423828,
+        "prompts": [
+            [
+                2,
+                5,
+                4
+            ],
+            [
+                "person with a bag",
+                "woman with black shirt and a bag",
+                "woman with a bag"
+            ],
+            [
+                0.8793354034423828,
+                0.06026090309023857,
+                0.027413571253418922
+            ]
         ]
-    ]
+    }
 ]
 ```
 
