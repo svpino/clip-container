@@ -1,5 +1,5 @@
 import base64
-import clip
+import open_clip
 import cv2
 import io
 import json
@@ -17,10 +17,6 @@ from functools import lru_cache
 from PIL import Image
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from urllib.parse import urlparse
-
-# Load the open CLIP model
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model, preprocess = clip.load("ViT-B/32", device=device)
 
 
 app = Flask(__name__)
@@ -79,64 +75,52 @@ class Predictor(object):
     preprocess = None
     image_mean = None
     image_std = None
+    tokenizer = None
 
     @staticmethod
     def load():
+        print('MASSIVE PENIS')
         if Predictor.clip_model is None:
             Predictor.device = "cuda" if torch.cuda.is_available() else "cpu"
-            Predictor.clip_model, _ = clip.load("ViT-B/32", device=Predictor.device)
+            model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
+            model.eval()
+            Predictor.tokenizer = open_clip.get_tokenizer('ViT-B-32')
+            Predictor.clip_model = model.to(Predictor.device)
 
-        if Predictor.preprocess is None:
-            input_resolution = Predictor.clip_model.input_resolution.item()
-            context_length = Predictor.clip_model.context_length.item()
-            vocab_size = Predictor.clip_model.vocab_size.item()
-
-            logging.info(
-                f"Model parameters: {np.sum([int(np.prod(p.shape)) for p in Predictor.clip_model.parameters()]):,}",
-            )
-            logging.info(f"Input resolution: {input_resolution}")
-            logging.info(f"Context length: {context_length}")
-            logging.info(f"Vocab size: {vocab_size}")
-
-            Predictor.preprocess = Compose(
-                [
-                    Resize(input_resolution, interpolation=Image.BICUBIC),
-                    CenterCrop(input_resolution),
-                    ToTensor(),
-                ]
-            )
-
-            Predictor.image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073]).to(
-                Predictor.device
-            )
-            Predictor.image_std = torch.tensor([0.26862954, 0.26130258, 0.27577711]).to(
-                Predictor.device
-            )
+            Predictor.preprocess = preprocess
 
         return Predictor.clip_model
 
     @staticmethod
-    def predict(images, classes):
+    def embed_images(images):
+        images = [Predictor.preprocess(image) for image in images]
         image_input = torch.tensor(np.stack(images)).to(Predictor.device)
-        image_input -= Predictor.image_mean[:, None, None]
-        image_input /= Predictor.image_std[:, None, None]
-
-        text_input = torch.cat(
-            [clip.tokenize(f"a photo of a {c}") for c in classes]
-        ).to(Predictor.device)
 
         with torch.no_grad():
-            image_features = (
+            return (
                 Predictor.clip_model.encode_image(image_input)
                 .float()
                 .to(Predictor.device)
             )
 
-            text_features = (
+    @staticmethod
+    def embed_text(text):
+        text_input = Predictor.tokenizer(text).to(Predictor.device)
+
+        with torch.no_grad():
+            return (
                 Predictor.clip_model.encode_text(text_input)
                 .float()
                 .to(Predictor.device)
             )
+
+    @staticmethod
+    def predict(images, classes):
+        image_features = Predictor.embed_images(images)
+
+        text_features = Predictor.embed_text(
+            [f"a photo of a {c}" for c in classes]
+        )
 
         image_features /= image_features.norm(dim=-1, keepdim=True)
         text_features /= text_features.norm(dim=-1, keepdim=True)
@@ -175,6 +159,44 @@ def ping():
     return Response(response="\n", status=status, mimetype="application/json")
 
 
+@app.route("/embeddings", methods=["POST"])
+def embeddings():
+    if request.content_type != "application/json":
+        return Response(
+            response='{"reason" : "Request should be application/json"}',
+            status=400,
+            mimetype="application/json",
+        )
+
+    Predictor.load()
+
+    request_id = uuid.uuid4().hex
+
+    data = request.get_json()
+
+    images = []
+    for im in data.get("images", []):
+        fragments = urlparse(im, allow_fragments=False)
+        if fragments.scheme in ("http", "https", "file"):
+            image = download_image(request_id, im)
+        else:
+            image = Image.open(io.BytesIO(base64.b64decode(im)))
+
+        images.append(image)
+
+    result = {
+        'images': Predictor.embed_images(images).tolist() if len(images) > 0 else [],
+        'texts': Predictor.embed_text(data.get("texts", [])).tolist()
+    }
+
+    delete_images(request_id=request_id)
+
+    return Response(
+        response=json.dumps(result),
+        status=200,
+        mimetype="application/json",
+    )
+
 @app.route("/invocations", methods=["POST"])
 def invoke():
     if request.content_type != "application/json":
@@ -191,14 +213,14 @@ def invoke():
     data = request.get_json()
 
     images = []
-    for im in data["images"]:
+    for im in data.get("images", []):
         fragments = urlparse(im, allow_fragments=False)
         if fragments.scheme in ("http", "https", "file"):
             image = download_image(request_id, im)
         else:
             image = Image.open(io.BytesIO(base64.b64decode(im)))
 
-        images.append(Predictor.preprocess(image))
+        images.append(image)
 
     result = Predictor.predict(images=images, classes=data["classes"])
 
