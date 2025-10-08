@@ -1,4 +1,4 @@
-FROM python:3.9.0-slim AS build
+FROM python:3.14.0-slim AS build
 
 RUN apt-get clean && \
     apt-get update -y && \
@@ -19,7 +19,7 @@ RUN pip3 install --user -r requirements.txt
 
 COPY /code . 
 
-FROM python:3.9.0-slim
+FROM python:3.14.0-slim
 
 RUN apt-get clean && \
     apt-get update -y && \
